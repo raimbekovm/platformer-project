@@ -44,3 +44,50 @@ char& get_collider(Vector2 pos, char look_for) {
 void reset_level_index() {
     level_index = 0;
 }
+void load_level(int offset) {
+    level_index += offset;
+
+    // Win logic
+    if (level_index >= LEVEL_COUNT) {
+        game_state = VICTORY_STATE;
+        create_victory_menu_background();
+        level_index = 0;
+        return;
+    }
+
+    // Level duplication
+    size_t rows = LEVELS[level_index].rows;
+    size_t columns = LEVELS[level_index].columns;
+    current_level_data = new char[rows*columns];
+
+    for (int row = 0; row < rows; row++) {
+        for (int column = 0; column < columns; column++) {
+            current_level_data[row * columns + column] = LEVELS[level_index].data[row * columns + column];
+        }
+    }
+
+    current_level = {rows, columns, current_level_data};
+
+    // Instantiate entities
+    spawn_player();
+    spawn_enemies();
+
+    // Calculate positioning and sizes
+    derive_graphics_metrics_from_loaded_level();
+
+    // Reset the timer
+    timer = MAX_LEVEL_TIME;
+}
+
+void unload_level() {
+    delete[] current_level_data;
+}
+
+// Getters and setters
+char& get_level_cell(size_t row, size_t column) {
+    return current_level.data[row * current_level.columns + column];
+}
+
+void set_level_cell(size_t row, size_t column, char chr) {
+    get_level_cell(row, column) = chr;
+}
