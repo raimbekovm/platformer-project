@@ -47,7 +47,6 @@ void reset_level_index() {
 void load_level(int offset) {
     level_index += offset;
 
-    // Win logic
     if (level_index >= LEVEL_COUNT) {
         game_state = VICTORY_STATE;
         create_victory_menu_background();
@@ -68,14 +67,11 @@ void load_level(int offset) {
 
     current_level = {rows, columns, current_level_data};
 
-    // Instantiate entities
     spawn_player();
     spawn_enemies();
 
-    // Calculate positioning and sizes
     derive_graphics_metrics_from_loaded_level();
 
-    // Reset the timer
     timer = MAX_LEVEL_TIME;
 }
 
@@ -83,11 +79,11 @@ void unload_level() {
     delete[] current_level_data;
 }
 
-// Getters and setters
+// getters and setters
 char& get_level_cell(size_t row, size_t column) {
     return current_level.data[row * current_level.columns + column];
 }
 
 void set_level_cell(size_t row, size_t column, char chr) {
     get_level_cell(row, column) = chr;
-}
+} 
