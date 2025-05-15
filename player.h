@@ -3,7 +3,6 @@
 
 #include "globals.h"
 
-// Function declarations
 void reset_player_stats();
 void increment_player_score();
 int get_total_player_score();
