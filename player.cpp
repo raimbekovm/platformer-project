@@ -1,10 +1,57 @@
 #include "player.h"
 
+void reset_player_stats() {
+    player_lives = MAX_PLAYER_LIVES;
+    for (int i = 0; i < LEVEL_COUNT; i++) {
+        player_level_scores[i] = 0;
+    }
+}
+
+void increment_player_score() {
+    PlaySound(coin_sound);
+    player_level_scores[level_index]++;
+}
+
+int get_total_player_score() {
+    int sum = 0;
+
+    for (int i = 0; i < LEVEL_COUNT; i++) {
+        sum += player_level_scores[i];
+    }
+
+    return sum;
+}
+
+void spawn_player() {
+    player_y_velocity = 0;
+
+    for (size_t row = 0; row < current_level.rows; ++row) {
+        for (size_t column = 0; column < current_level.columns; ++column) {
+            char cell = get_level_cell(row, column);;
+
+            if (cell == PLAYER) {
+                player_pos.x = column;
+                player_pos.y = row;
+                set_level_cell(row, column, AIR);
+                return;
+            }
+        }
+    }
+}
+
+void kill_player() {
+    PlaySound(player_death_sound);
+    game_state = DEATH_STATE;
+    player_lives--;
+    player_level_scores[level_index] = 0;
+}
+
 void move_player_horizontally(float delta) {
     float next_x = player_pos.x + delta;
     if (!is_colliding({next_x, player_pos.y}, WALL)) {
         player_pos.x = next_x;
-    } else {
+    }
+    else {
         player_pos.x = roundf(player_pos.x);
         return;
     }
@@ -45,11 +92,13 @@ void update_player() {
                 increment_player_score();
                 time_to_coin_counter = 0;
             }
-        } else {
+        }
+        else {
             load_level(1);
             PlaySound(exit_sound);
         }
-    } else {
+    }
+    else {
         if (timer >= 0) timer--;
     }
 
@@ -61,9 +110,11 @@ void update_player() {
         if (player_y_velocity > 0) {
             remove_colliding_enemy(player_pos);
             PlaySound(kill_enemy_sound);
+
             increment_player_score();
             player_y_velocity = -BOUNCE_OFF_ENEMY;
-        } else {
+        }
+        else {
             kill_player();
         }
     }
