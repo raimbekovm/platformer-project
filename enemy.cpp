@@ -1,12 +1,15 @@
 #include "enemy.h"
+#include "level.h"
+
+extern Level currentLevel;
 
 void spawn_enemies() {
     enemies.clear();
     // очищаем вектор врагов перед их новым спавном
 
-    for (size_t row = 0; row < current_level.rows; ++row) {
-        for (size_t column = 0; column < current_level.columns; ++column) {
-            char cell = get_level_cell(row, column);
+    for (size_t row = 0; row < currentLevel.getRows(); ++row) {
+        for (size_t column = 0; column < currentLevel.getColumns(); ++column) {
+            char cell = currentLevel.getLevelCell(row, column);
             // получаем символ из уровня, чтобы проверить, находится ли там враг
 
             if (cell == ENEMY) {
@@ -16,7 +19,7 @@ void spawn_enemies() {
                                   });
                 // добавляем врага в список, указывая его позицию и направление взгляда
 
-                set_level_cell(row, column, AIR);
+                currentLevel.setLevelCell(row, column, AIR);
                 // заменяем клетку на воздух, чтобы враг больше не считался частью уровня
             }
         }
@@ -29,7 +32,7 @@ void update_enemies() {
         next_x += (enemy.is_looking_right ? ENEMY_MOVEMENT_SPEED : -ENEMY_MOVEMENT_SPEED);
         // вычисляем следующую позицию врага по x в зависимости от направления движения
 
-        if (is_colliding({next_x, enemy.pos.y}, WALL)) {
+        if (currentLevel.isColliding({next_x, enemy.pos.y}, WALL)) {
             enemy.is_looking_right = !enemy.is_looking_right;
             // если столкновение со стеной — меняем направление движения
         }

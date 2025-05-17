@@ -1,4 +1,8 @@
 #include "player.h"
+#include "level.h"
+
+// Add extern declaration for the global Level instance
+extern Level currentLevel;
 
 void reset_player_stats() {
     player_lives = MAX_PLAYER_LIVES;
@@ -14,7 +18,7 @@ void increment_player_score() {
     PlaySound(coin_sound);
     // звук при сборе монеты
 
-    player_level_scores[level_index]++;
+    player_level_scores[currentLevel.getCurrentLevelIndex()]++;
     // увеличиваем счёт на текущем уровне
 }
 
@@ -33,14 +37,14 @@ void spawn_player() {
     player_y_velocity = 0;
     // обнуляем вертикальную скорость игрока
 
-    for (size_t row = 0; row < current_level.rows; ++row) {
-        for (size_t column = 0; column < current_level.columns; ++column) {
-            char cell = get_level_cell(row, column);
+    for (size_t row = 0; row < currentLevel.getRows(); ++row) {
+        for (size_t column = 0; column < currentLevel.getColumns(); ++column) {
+            char cell = currentLevel.getLevelCell(row, column);
 
             if (cell == PLAYER) {
                 player_pos.x = column;
                 player_pos.y = row;
-                set_level_cell(row, column, AIR);
+                currentLevel.setLevelCell(row, column, AIR);
                 // устанавливаем позицию игрока и очищаем клетку
                 return;
             }
@@ -58,7 +62,7 @@ void kill_player() {
     player_lives--;
     // уменьшаем количество жизней
 
-    player_level_scores[level_index] = 0;
+    player_level_scores[currentLevel.getCurrentLevelIndex()] = 0;
     // обнуляем очки на текущем уровне
 }
 
@@ -66,7 +70,7 @@ void move_player_horizontally(float delta) {
     float next_x = player_pos.x + delta;
     // рассчитываем следующую позицию по X
 
-    if (!is_colliding({next_x, player_pos.y}, WALL)) {
+    if (!currentLevel.isColliding({next_x, player_pos.y}, WALL)) {
         player_pos.x = next_x;
         // если нет столкновений — перемещаем игрока
     }
@@ -84,7 +88,7 @@ void move_player_horizontally(float delta) {
 }
 
 void update_player_gravity() {
-    if (is_colliding({player_pos.x, player_pos.y - 0.1f}, WALL) && player_y_velocity < 0) {
+    if (currentLevel.isColliding({player_pos.x, player_pos.y - 0.1f}, WALL) && player_y_velocity < 0) {
         player_y_velocity = CEILING_BOUNCE_OFF;
         // отскакиваем от потолка
     }
@@ -95,7 +99,7 @@ void update_player_gravity() {
     player_y_velocity += GRAVITY_FORCE;
     // применяем силу гравитации
 
-    is_player_on_ground = is_colliding({player_pos.x, player_pos.y + 0.1f}, WALL);
+    is_player_on_ground = currentLevel.isColliding({player_pos.x, player_pos.y + 0.1f}, WALL);
     // проверяем, стоит ли игрок на земле
 
     if (is_player_on_ground) {
@@ -109,15 +113,15 @@ void update_player() {
     update_player_gravity();
     // обновляем положение игрока по гравитации
 
-    if (is_colliding(player_pos, COIN)) {
-        get_collider(player_pos, COIN) = AIR;
+    if (currentLevel.isColliding(player_pos, COIN)) {
+        currentLevel.getCollider(player_pos, COIN) = AIR;
         // удаляем монету с уровня
 
         increment_player_score();
         // добавляем очки игроку
     }
 
-    if (is_colliding(player_pos, EXIT)) {
+    if (currentLevel.isColliding(player_pos, EXIT)) {
         if (timer > 0) {
             timer -= 25;
             time_to_coin_counter += 5;
@@ -130,7 +134,7 @@ void update_player() {
             }
         }
         else {
-            load_level(1);
+            currentLevel.loadLevel(1);
             PlaySound(exit_sound);
             // если время вышло — загружаем следующий уровень
         }
@@ -140,7 +144,7 @@ void update_player() {
         // уменьшаем таймер при отсутствии выхода
     }
 
-    if (is_colliding(player_pos, SPIKE) || player_pos.y > current_level.rows) {
+    if (currentLevel.isColliding(player_pos, SPIKE) || player_pos.y > currentLevel.getRows()) {
         kill_player();
         // если накололся на шипы или упал вниз — игрок умирает
     }

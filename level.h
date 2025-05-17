@@ -2,15 +2,50 @@
 #define LEVEL_H
 
 #include "globals.h"
+#include <string>
+#include <fstream>
+#include <stdexcept>
 
-// Function declarations
-bool is_inside_level(int row, int column);
-bool is_colliding(Vector2 pos, char look_for);
-char& get_collider(Vector2 pos, char look_for);
-void reset_level_index();
-void load_level(int offset);
-void unload_level();
-char& get_level_cell(size_t row, size_t column);
-void set_level_cell(size_t row, size_t column, char chr);
+class Level {
+private:
+    int rows;
+    int columns;
+    char* levelData;
+    int currentLevelIndex;
+
+    // RLL parsing methods
+    void parseRLLFile(const std::string& filename);
+    void decodeRLLRow(const std::string& row, int currentRow);
+    int parseNumber(const std::string& str, size_t& pos);
+
+public:
+    Level();
+    ~Level();
+
+    // Core functionality
+    bool isInsideLevel(int row, int column) const;
+    bool isColliding(Vector2 pos, char lookFor) const;
+    char& getCollider(Vector2 pos, char lookFor);
+    
+    // Level management
+    void resetLevelIndex();
+    void loadLevel(int offset);
+    void unloadLevel();
+    
+    // RLL file loading
+    void loadFromRLL(const std::string& filename);
+    
+    // Cell access
+    char& getLevelCell(size_t row, size_t column) const;
+    void setLevelCell(size_t row, size_t column, char chr);
+    
+    // Getters
+    int getRows() const { return rows; }
+    int getColumns() const { return columns; }
+    int getCurrentLevelIndex() const { return currentLevelIndex; }
+
+    // Testing functionality
+    bool testLevelFunctionality();
+};
 
 #endif //LEVEL_H

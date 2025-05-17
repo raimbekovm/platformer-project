@@ -8,6 +8,8 @@
 #include "assets.h"
 #include "utilities.h"
 
+Level currentLevel;
+
 void update_game() {
     game_frame++;
 
@@ -16,7 +18,7 @@ void update_game() {
             if (IsKeyPressed(KEY_ENTER)) {
                 SetExitKey(0);
                 game_state = GAME_STATE;
-                load_level(0);
+                currentLevel.loadLevel(0);
             }
             break;
 
@@ -30,7 +32,7 @@ void update_game() {
             }
 
             // Calculating collisions to decide whether the player is allowed to jump
-            is_player_on_ground = is_colliding({player_pos.x, player_pos.y + 0.1f}, WALL);
+            is_player_on_ground = currentLevel.isColliding({player_pos.x, player_pos.y + 0.1f}, WALL);
             if ((IsKeyDown(KEY_UP) || IsKeyDown(KEY_W) || IsKeyDown(KEY_SPACE)) && is_player_on_ground) {
                 player_y_velocity = -JUMP_STRENGTH;
             }
@@ -54,7 +56,7 @@ void update_game() {
 
             if (IsKeyPressed(KEY_ENTER)) {
                 if (player_lives > 0) {
-                    load_level(0);
+                    currentLevel.loadLevel(0);
                     game_state = GAME_STATE;
                 }
                 else {
@@ -66,16 +68,16 @@ void update_game() {
 
         case GAME_OVER_STATE:
             if (IsKeyPressed(KEY_ENTER)) {
-                reset_level_index();
+                currentLevel.resetLevelIndex();
                 reset_player_stats();
                 game_state = GAME_STATE;
-                load_level(0);
+                currentLevel.loadLevel(0);
             }
             break;
 
         case VICTORY_STATE:
             if (IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_ESCAPE)) {
-                reset_level_index();
+                currentLevel.resetLevelIndex();
                 reset_player_stats();
                 game_state = MENU_STATE;
                 SetExitKey(KEY_ESCAPE);
@@ -128,7 +130,7 @@ int main() {
     load_fonts();
     load_images();
     load_sounds();
-    load_level();
+    currentLevel.loadLevel(0);
 
     while (!WindowShouldClose()) {
         BeginDrawing();
@@ -139,7 +141,7 @@ int main() {
         EndDrawing();
     }
 
-    unload_level();
+    currentLevel.unloadLevel();
     unload_sounds();
     unload_images();
     unload_fonts();
