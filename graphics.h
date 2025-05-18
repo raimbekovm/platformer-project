@@ -3,8 +3,10 @@
 
 #include "globals.h"
 #include "level.h"
+#include "player.h"
 
 extern Level currentLevel;
+extern Player player;
 
 void draw_text(Text &text) {
     // Measure the text, center it to the required position, and draw it
@@ -41,7 +43,7 @@ void derive_graphics_metrics_from_loaded_level() {
 
 void draw_parallax_background() {
     // First uses the player's position
-    float initial_offset      = -(player_pos.x * PARALLAX_PLAYER_SCROLLING_SPEED + game_frame * PARALLAX_IDLE_SCROLLING_SPEED);
+    float initial_offset = -(player.getPosition().x * PARALLAX_PLAYER_SCROLLING_SPEED + game_frame * PARALLAX_IDLE_SCROLLING_SPEED);
 
     // Calculate offsets for different layers
     float background_offset   = initial_offset;
@@ -77,7 +79,7 @@ void draw_game_overlay() {
     slight_vertical_offset *= screen_scale;
 
     // Hearts
-    for (int i = 0; i < player_lives; i++) {
+    for (int i = 0; i < player.getLives(); i++) {
         const float SPACE_BETWEEN_HEARTS = 4.0f * screen_scale;
         draw_image(heart_image, {ICON_SIZE * i + SPACE_BETWEEN_HEARTS, slight_vertical_offset}, ICON_SIZE);
     }
@@ -88,9 +90,9 @@ void draw_game_overlay() {
     DrawTextEx(menu_font, std::to_string(timer / 60).c_str(), timer_position, ICON_SIZE, 2.0f, WHITE);
 
     // Score
-    Vector2 score_dimensions = MeasureTextEx(menu_font, std::to_string(get_total_player_score()).c_str(), ICON_SIZE, 2.0f);
+    Vector2 score_dimensions = MeasureTextEx(menu_font, std::to_string(player.getTotalScore()).c_str(), ICON_SIZE, 2.0f);
     Vector2 score_position = {GetRenderWidth() - score_dimensions.x - ICON_SIZE, slight_vertical_offset};
-    DrawTextEx(menu_font, std::to_string(get_total_player_score()).c_str(), score_position, ICON_SIZE, 2.0f, WHITE);
+    DrawTextEx(menu_font, std::to_string(player.getTotalScore()).c_str(), score_position, ICON_SIZE, 2.0f, WHITE);
     draw_sprite(coin_sprite, {GetRenderWidth() - ICON_SIZE, slight_vertical_offset}, ICON_SIZE);
 }
 
@@ -104,7 +106,7 @@ void draw_level() {
             Vector2 pos = {
                     // Move the level to the left as the player advances to the right,
                     // shifting to the left to allow the player to be centered later
-                    (static_cast<float>(column) - player_pos.x) * cell_size + horizontal_shift,
+                    (static_cast<float>(column) - player.getPosition().x) * cell_size + horizontal_shift,
                     static_cast<float>(row) * cell_size
             };
 
@@ -142,20 +144,19 @@ void draw_player() {
     // Shift the camera to the center of the screen to allow to see what is in front of the player
     Vector2 pos = {
             horizontal_shift,
-            player_pos.y * cell_size
+            player.getPosition().y * cell_size
     };
 
     // Pick an appropriate sprite for the player
     if (game_state == GAME_STATE) {
-        if (!is_player_on_ground) {
-            draw_image((is_looking_forward ? player_jump_forward_image : player_jump_backwards_image), pos, cell_size);
+        if (!player.isOnGround()) {
+            draw_image((player.isLookingRight() ? player_jump_forward_image : player_jump_backwards_image), pos, cell_size);
         }
-        else if (is_moving) {
-            draw_sprite((is_looking_forward ? player_walk_forward_sprite : player_walk_backwards_sprite), pos, cell_size);
-            is_moving = false;
+        else if (player.isMoving()) {
+            draw_sprite((player.isLookingRight() ? player_walk_forward_sprite : player_walk_backwards_sprite), pos, cell_size);
         }
         else {
-            draw_image((is_looking_forward ? player_stand_forward_image : player_stand_backwards_image), pos, cell_size);
+            draw_image((player.isLookingRight() ? player_stand_forward_image : player_stand_backwards_image), pos, cell_size);
         }
     }
     else {
@@ -169,7 +170,7 @@ void draw_enemies() {
         horizontal_shift = (screen_size.x - cell_size) / 2;
 
         Vector2 pos = {
-                (enemy.pos.x - player_pos.x) * cell_size + horizontal_shift,
+                (enemy.pos.x - player.getPosition().x) * cell_size + horizontal_shift,
                 enemy.pos.y * cell_size
         };
 

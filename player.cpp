@@ -1,166 +1,148 @@
 #include "player.h"
 #include "level.h"
+#include "enemy.h"
 
-// Add extern declaration for the global Level instance
 extern Level currentLevel;
 
-void reset_player_stats() {
-    player_lives = MAX_PLAYER_LIVES;
-    // сбрасываем количество жизней игрока
+// начальные значения игрока
+Player::Player() {
+    resetStats();
+}
 
+// cбрасывает статистику (жизни и очки)
+void Player::resetStats() {
+    lives = MAX_PLAYER_LIVES;
     for (int i = 0; i < LEVEL_COUNT; i++) {
-        player_level_scores[i] = 0;
-        // обнуляем очки на каждом уровне
+        levelScores[i] = 0;
     }
 }
 
-void increment_player_score() {
+// увеличивает счёт игрока и проигрывает звук монеты
+void Player::incrementScore() {
     PlaySound(coin_sound);
-    // звук при сборе монеты
-
-    player_level_scores[currentLevel.getCurrentLevelIndex()]++;
-    // увеличиваем счёт на текущем уровне
+    levelScores[currentLevel.getCurrentLevelIndex()]++;
 }
 
-int get_total_player_score() {
+// подсчитывает общий счёт игрока по всем уровням
+int Player::getTotalScore() const {
     int sum = 0;
-
     for (int i = 0; i < LEVEL_COUNT; i++) {
-        sum += player_level_scores[i];
-        // суммируем очки со всех уровней
+        sum += levelScores[i];
     }
-
     return sum;
 }
 
-void spawn_player() {
-    player_y_velocity = 0;
-    // обнуляем вертикальную скорость игрока
-
-    for (size_t row = 0; row < currentLevel.getRows(); ++row) {
-        for (size_t column = 0; column < currentLevel.getColumns(); ++column) {
-            char cell = currentLevel.getLevelCell(row, column);
-
+// размещает игрока на уровне, ищет символ игрока в данных уровня
+void Player::spawn(const Level& level) {
+    yVelocity = 0;
+    
+    for (size_t row = 0; row < level.getRows(); ++row) {
+        for (size_t column = 0; column < level.getColumns(); ++column) {
+            char cell = level.getLevelCell(row, column);
+            
             if (cell == PLAYER) {
-                player_pos.x = column;
-                player_pos.y = row;
-                currentLevel.setLevelCell(row, column, AIR);
-                // устанавливаем позицию игрока и очищаем клетку
+                position.x = column;
+                position.y = row;
+                const_cast<Level&>(level).setLevelCell(row, column, AIR);
                 return;
             }
         }
     }
 }
 
-void kill_player() {
+// обрабатывает смерть игрока, проигрывает звук, уменьшает жизни и обнуляет счёт уровня
+void Player::kill() {
     PlaySound(player_death_sound);
-    // звук смерти игрока
-
     game_state = DEATH_STATE;
-    // состояние игры смерть
-
-    player_lives--;
-    // уменьшаем количество жизней
-
-    player_level_scores[currentLevel.getCurrentLevelIndex()] = 0;
-    // обнуляем очки на текущем уровне
+    lives--;
+    levelScores[currentLevel.getCurrentLevelIndex()] = 0;
 }
 
-void move_player_horizontally(float delta) {
-    float next_x = player_pos.x + delta;
-    // рассчитываем следующую позицию по X
-
-    if (!currentLevel.isColliding({next_x, player_pos.y}, WALL)) {
-        player_pos.x = next_x;
-        // если нет столкновений — перемещаем игрока
-    }
-    else {
-        player_pos.x = roundf(player_pos.x);
-        // если столкновение — выравниваем позицию
+// горизонтальное движение игрока с проверкой столкновений
+void Player::moveHorizontally(float delta) {
+    float next_x = position.x + delta;
+    
+    if (!currentLevel.isColliding({next_x, position.y}, WALL)) {
+        position.x = next_x;
+    } else {
+        position.x = roundf(position.x);
         return;
     }
-
-    is_looking_forward = delta > 0;
-    // обновляем направление взгляда
-
-    if (delta != 0) is_moving = true;
-    // если игрок двигается — ставим флаг движения
+    
+    lookingForward = delta > 0;
+    moving = delta != 0;
 }
 
-void update_player_gravity() {
-    if (currentLevel.isColliding({player_pos.x, player_pos.y - 0.1f}, WALL) && player_y_velocity < 0) {
-        player_y_velocity = CEILING_BOUNCE_OFF;
-        // отскакиваем от потолка
-    }
-
-    player_pos.y += player_y_velocity;
-    // перемещаем игрока по оси Y
-
-    player_y_velocity += GRAVITY_FORCE;
-    // применяем силу гравитации
-
-    is_player_on_ground = currentLevel.isColliding({player_pos.x, player_pos.y + 0.1f}, WALL);
-    // проверяем, стоит ли игрок на земле
-
-    if (is_player_on_ground) {
-        player_y_velocity = 0;
-        player_pos.y = roundf(player_pos.y);
-        // если стоит — сбрасываем скорость и выравниваем позицию
+// прыжок игрока, если он находится на земле
+void Player::jump() {
+    if (onGround) {
+        yVelocity = -JUMP_STRENGTH;
+        onGround = false;
     }
 }
 
-void update_player() {
-    update_player_gravity();
-    // обновляем положение игрока по гравитации
-
-    if (currentLevel.isColliding(player_pos, COIN)) {
-        currentLevel.getCollider(player_pos, COIN) = AIR;
-        // удаляем монету с уровня
-
-        increment_player_score();
-        // добавляем очки игроку
+// обновляет гравитацию и проверяет столкновения с землёй и потолком
+void Player::updateGravity(const Level& level) {
+    if (level.isColliding({position.x, position.y - 0.1f}, WALL) && yVelocity < 0) {
+        yVelocity = CEILING_BOUNCE_OFF;
     }
+    
+    position.y += yVelocity;
+    yVelocity += GRAVITY_FORCE;
+    
+    onGround = level.isColliding({position.x, position.y + 0.1f}, WALL);
+    
+    if (onGround) {
+        yVelocity = 0;
+        position.y = roundf(position.y);
+    }
+}
 
-    if (currentLevel.isColliding(player_pos, EXIT)) {
+// сбор монет, выход с уровня, столкновения с шипами и врагами
+void Player::update(const Level& level) {
+    updateGravity(level);
+    
+    // сбор монет
+    if (level.isColliding(position, COIN)) {
+        const_cast<Level&>(level).getCollider(position, COIN) = AIR;
+        incrementScore();
+    }
+    
+    // выхода с уровня
+    if (level.isColliding(position, EXIT)) {
         if (timer > 0) {
             timer -= 25;
             time_to_coin_counter += 5;
-            // уменьшаем таймер и увеличиваем счётчик монеты
-
+            
             if (time_to_coin_counter / 60 > 1) {
-                increment_player_score();
+                incrementScore();
                 time_to_coin_counter = 0;
-                // через определённое время начисляем очки
             }
-        }
-        else {
-            currentLevel.loadLevel(1);
+        } else {
+            const_cast<Level&>(level).loadLevel(1);
             PlaySound(exit_sound);
-            // если время вышло — загружаем следующий уровень
         }
-    }
-    else {
+    } else {
         if (timer >= 0) timer--;
-        // уменьшаем таймер при отсутствии выхода
     }
-
-    if (currentLevel.isColliding(player_pos, SPIKE) || player_pos.y > currentLevel.getRows()) {
-        kill_player();
-        // если накололся на шипы или упал вниз — игрок умирает
+    
+    // проверка столкновения с шипами или падения
+    if (level.isColliding(position, SPIKE) || position.y > level.getRows()) {
+        kill();
     }
-
-    if (is_colliding_with_enemies(player_pos)) {
-        if (player_y_velocity > 0) {
-            remove_colliding_enemy(player_pos);
+    
+    // проверка столкновения с врагами
+    if (is_colliding_with_enemies(position)) {
+        if (yVelocity > 0) {
+            // игрок падает на врага - убиваем врага
+            remove_colliding_enemy(position);
             PlaySound(kill_enemy_sound);
-
-            increment_player_score();
-            player_y_velocity = -BOUNCE_OFF_ENEMY;
-            // если прыгнул на врага — убиваем врага и подпрыгиваем
-        }
-        else {
-            kill_player();
-            // иначе — игрок умирает от врага
+            
+            incrementScore();
+            yVelocity = -BOUNCE_OFF_ENEMY;
+        } else {
+            // игрок столкнулся с врагом сбоку - игрок умирает
+            kill();
         }
     }
 }

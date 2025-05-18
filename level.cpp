@@ -1,6 +1,9 @@
 #include "level.h"
+#include "player.h"
 #include <sstream>
 #include <iostream>
+
+extern Player player;  // Add extern declaration for the Player instance
 
 // конструктор класса level - инициализирует начальные значения
 Level::Level() : rows(0), columns(0), levelData(nullptr), currentLevelIndex(0) {}
@@ -97,7 +100,7 @@ void Level::loadLevel(int offset) {
         }
     }
 
-    spawn_player();
+    player.spawn(*this);  // Use the Player class method instead of the old function
     spawn_enemies();
     // создаём игрока и врагов на уровне
 
