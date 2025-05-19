@@ -3,79 +3,90 @@
 
 extern Level currentLevel;
 
-void spawn_enemies() {
+std::vector<Enemy> Enemy::enemies;
+
+Enemy::Enemy() : position({0, 0}), lookingRight(true) {}
+
+Enemy::Enemy(const Vector2& pos, bool lookingRight)
+    : position(pos), lookingRight(lookingRight) {}
+
+// размещает врагов на уровне
+void Enemy::spawnEnemies(const Level& level) {
     enemies.clear();
-    // очищаем вектор врагов перед их новым спавном
-
-    for (size_t row = 0; row < currentLevel.getRows(); ++row) {
-        for (size_t column = 0; column < currentLevel.getColumns(); ++column) {
-            char cell = currentLevel.getLevelCell(row, column);
-            // получаем символ из уровня, чтобы проверить, находится ли там враг
-
+    
+    for (size_t row = 0; row < level.getRows(); ++row) {
+        for (size_t column = 0; column < level.getColumns(); ++column) {
+            char cell = level.getLevelCell(row, column);
+            
             if (cell == ENEMY) {
-                enemies.push_back({
-                                          {static_cast<float>(column), static_cast<float>(row)},
-                                          true
-                                  });
-                // добавляем врага в список, указывая его позицию и направление взгляда
-
-                currentLevel.setLevelCell(row, column, AIR);
-                // заменяем клетку на воздух, чтобы враг больше не считался частью уровня
+                enemies.push_back(Enemy(
+                    {static_cast<float>(column), static_cast<float>(row)},
+                    true
+                ));
+                
+                const_cast<Level&>(level).setLevelCell(row, column, AIR);
             }
         }
     }
 }
 
-void update_enemies() {
-    for (auto &enemy : enemies) {
-        float next_x = enemy.pos.x;
-        next_x += (enemy.is_looking_right ? ENEMY_MOVEMENT_SPEED : -ENEMY_MOVEMENT_SPEED);
-        // вычисляем следующую позицию врага по x в зависимости от направления движения
-
-        if (currentLevel.isColliding({next_x, enemy.pos.y}, WALL)) {
-            enemy.is_looking_right = !enemy.is_looking_right;
-            // если столкновение со стеной — меняем направление движения
-        }
-        else {
-            enemy.pos.x = next_x;
-            // иначе — обновляем позицию врага
-        }
+// обновляет состояние всех врагов
+void Enemy::updateEnemies() {
+    for (auto& enemy : enemies) {
+        enemy.update();
     }
 }
 
-bool is_colliding_with_enemies(Vector2 pos) {
-    Rectangle entity_hitbox = {pos.x, pos.y, 1.0f, 1.0f};
-    // создаём хитбокс сущности, с которой проверяем столкновение
-
-    for (auto &enemy : enemies) {
-        Rectangle enemy_hitbox = {(float) enemy.pos.x, (float) enemy.pos.y, 1.0f, 1.0f};
-        // создаём хитбокс каждого врага
-
-        if (CheckCollisionRecs(entity_hitbox, enemy_hitbox)) {
+// проверяет столкновение с врагом
+bool Enemy::isCollidingWithEnemies(const Vector2& pos) {
+    Rectangle entityHitbox = {pos.x, pos.y, 1.0f, 1.0f};
+    
+    for (const auto& enemy : enemies) {
+        Rectangle enemyHitbox = {
+            enemy.position.x,
+            enemy.position.y,
+            1.0f,
+            1.0f
+        };
+        
+        if (CheckCollisionRecs(entityHitbox, enemyHitbox)) {
             return true;
-            // если хитбоксы пересекаются — есть столкновение
         }
     }
     return false;
-    // если не найдено ни одного пересечения — возвращаем false
 }
 
-void remove_colliding_enemy(Vector2 pos) {
-    Rectangle entity_hitbox = {pos.x, pos.y, 1.0f, 1.0f};
-    // создаём хитбокс сущности для проверки столкновений с врагами
-
-    for (auto it = enemies.begin(); it != enemies.end(); it++) {
-        Rectangle enemy_hitbox = {(float) it->pos.x, (float) it->pos.y, 1.0f, 1.0f};
-        // создаём хитбокс текущего врага
-
-        if (CheckCollisionRecs(entity_hitbox, enemy_hitbox)) {
+// удаляет врага с которым произошло столкновение
+void Enemy::removeCollidingEnemy(const Vector2& pos) {
+    Rectangle entityHitbox = {pos.x, pos.y, 1.0f, 1.0f};
+    
+    for (auto it = enemies.begin(); it != enemies.end(); ++it) {
+        Rectangle enemyHitbox = {
+            it->position.x,
+            it->position.y,
+            1.0f,
+            1.0f
+        };
+        
+        if (CheckCollisionRecs(entityHitbox, enemyHitbox)) {
             enemies.erase(it);
-            // удаляем врага, если произошло столкновение
-
-            remove_colliding_enemy(pos);
-            // вызываем функцию рекурсивно на тот же хитбокс, чтобы удалить всех врагов, которые пересекаются с позицией
-
             return;
         }
+    }
+}
+
+// обновляет состояние отдельного врага
+void Enemy::update() {
+    moveHorizontally(lookingRight ? ENEMY_MOVEMENT_SPEED : -ENEMY_MOVEMENT_SPEED);
+}
+
+// обрабатывает горизонтальное движение врага с проверкой столкновений
+void Enemy::moveHorizontally(float delta) {
+    float next_x = position.x + delta;
+    
+    if (currentLevel.isColliding({next_x, position.y}, WALL)) {
+        lookingRight = !lookingRight;
+    } else {
+        position.x = next_x;
     }
 }

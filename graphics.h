@@ -1,9 +1,11 @@
 #ifndef GRAPHICS_H
 #define GRAPHICS_H
 
+#include "raylib.h"
 #include "globals.h"
 #include "level.h"
 #include "player.h"
+#include "enemy.h"
 
 extern Level currentLevel;
 extern Player player;
@@ -166,12 +168,12 @@ void draw_player() {
 
 void draw_enemies() {
     // Go over all enemies and draw them, once again accounting to the player's movement and horizontal shift
-    for (auto &enemy : enemies) {
+    for (const auto& enemy : Enemy::getEnemies()) {
         horizontal_shift = (screen_size.x - cell_size) / 2;
 
         Vector2 pos = {
-                (enemy.pos.x - player.getPosition().x) * cell_size + horizontal_shift,
-                enemy.pos.y * cell_size
+                (enemy.getPosition().x - player.getPosition().x) * cell_size + horizontal_shift,
+                enemy.getPosition().y * cell_size
         };
 
         draw_sprite(enemy_walk, pos, cell_size);

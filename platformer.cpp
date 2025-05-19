@@ -9,7 +9,7 @@
 #include "utilities.h"
 
 Level currentLevel;
-Player player;  // Create a Player instance
+Player player;
 
 void update_game() {
     game_frame++;
@@ -20,7 +20,7 @@ void update_game() {
                 SetExitKey(0);
                 game_state = GAME_STATE;
                 currentLevel.loadLevel(0);
-                player.spawn(currentLevel);  // Spawn player when starting new game
+                player.spawn(currentLevel);
             }
             break;
 
@@ -33,13 +33,12 @@ void update_game() {
                 player.moveHorizontally(-PLAYER_MOVEMENT_SPEED);
             }
 
-            // Jump when on ground
             if (IsKeyDown(KEY_UP) || IsKeyDown(KEY_W) || IsKeyDown(KEY_SPACE)) {
                 player.jump();
             }
 
             player.update(currentLevel);
-            update_enemies();
+            Enemy::updateEnemies();
 
             if (IsKeyPressed(KEY_ESCAPE)) {
                 game_state = PAUSED_STATE;
@@ -58,7 +57,7 @@ void update_game() {
             if (IsKeyPressed(KEY_ENTER)) {
                 if (player.getLives() > 0) {
                     currentLevel.loadLevel(0);
-                    player.spawn(currentLevel);  // Respawn player
+                    player.spawn(currentLevel);
                     game_state = GAME_STATE;
                 }
                 else {
@@ -74,7 +73,7 @@ void update_game() {
                 player.resetStats();
                 game_state = GAME_STATE;
                 currentLevel.loadLevel(0);
-                player.spawn(currentLevel);  // Spawn player
+                player.spawn(currentLevel);
             }
             break;
 

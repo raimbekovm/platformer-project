@@ -35,11 +35,11 @@ int Player::getTotalScore() const {
 // размещает игрока на уровне, ищет символ игрока в данных уровня
 void Player::spawn(const Level& level) {
     yVelocity = 0;
-    
+
     for (size_t row = 0; row < level.getRows(); ++row) {
         for (size_t column = 0; column < level.getColumns(); ++column) {
             char cell = level.getLevelCell(row, column);
-            
+
             if (cell == PLAYER) {
                 position.x = column;
                 position.y = row;
@@ -61,14 +61,14 @@ void Player::kill() {
 // горизонтальное движение игрока с проверкой столкновений
 void Player::moveHorizontally(float delta) {
     float next_x = position.x + delta;
-    
+
     if (!currentLevel.isColliding({next_x, position.y}, WALL)) {
         position.x = next_x;
     } else {
         position.x = roundf(position.x);
         return;
     }
-    
+
     lookingForward = delta > 0;
     moving = delta != 0;
 }
@@ -113,7 +113,7 @@ void Player::update(const Level& level) {
         if (timer > 0) {
             timer -= 25;
             time_to_coin_counter += 5;
-            
+
             if (time_to_coin_counter / 60 > 1) {
                 incrementScore();
                 time_to_coin_counter = 0;
@@ -132,12 +132,12 @@ void Player::update(const Level& level) {
     }
     
     // проверка столкновения с врагами
-    if (is_colliding_with_enemies(position)) {
+    if (Enemy::isCollidingWithEnemies(position)) {
         if (yVelocity > 0) {
             // игрок падает на врага - убиваем врага
-            remove_colliding_enemy(position);
+            Enemy::removeCollidingEnemy(position);
             PlaySound(kill_enemy_sound);
-            
+
             incrementScore();
             yVelocity = -BOUNCE_OFF_ENEMY;
         } else {
