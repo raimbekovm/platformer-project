@@ -101,8 +101,8 @@ void Level::loadLevel(int offset) {
         }
     }
 
-    player.spawn(*this);  // Use the Player class method
-    Enemy::spawnEnemies(*this);  // Use the new Enemy class method
+    player.spawn(*this);
+    Enemy::spawnEnemies(*this);
     // создаём игрока и врагов на уровне
 
     derive_graphics_metrics_from_loaded_level();

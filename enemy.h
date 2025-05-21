@@ -3,6 +3,7 @@
 
 #include "globals.h"
 #include "level.h"
+#include <stdexcept>
 
 class Enemy {
 private:
@@ -28,7 +29,12 @@ public:
     bool isLookingRight() const { return lookingRight; }
     
     // сеттер
-    void setPosition(const Vector2& pos) { position = pos; }
+    void setPosition(const Vector2& pos) { 
+        if (pos.x < 0 || pos.y < 0) {
+            throw std::invalid_argument("Invalid enemy position");
+        }
+        position = pos; 
+    }
     void setLookingRight(bool lookingRight) { this->lookingRight = lookingRight; }
 
     static const std::vector<Enemy>& getEnemies() { return enemies; }
